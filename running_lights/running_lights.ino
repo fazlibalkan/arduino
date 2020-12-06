@@ -4,6 +4,8 @@ int input = 0;
 int canBeChosen[5] = {1, 2, 3, 4, 5};
 int pins[8]; //array for the led pins
 
+volatile bool buttonState = false;
+
 
 void setup() {
   //  setup for serial and some prints
@@ -18,8 +20,11 @@ void setup() {
   }
   pinMode(buttonPin, INPUT);
 
+  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonToggled, CHANGE);
+
   }
 
+  
 void loop() {
   input = GetInput();
   if (input == 1) {
@@ -44,13 +49,31 @@ void RunningLights() {
   }
 }
 
-void RunningLightsWithPauseAndResume() {}
+void RunningLightsWithPauseAndResume() {
+  while(1) {
+    for (int i = 0; i < 7; i++) {
+      while (buttonState){}
+      ledOnOff(pins[i]);
+    }
+    for (int i = 0; i < 7; i++) {
+      while (buttonState){}
+      ledOnOff(pins[7-i]);
+    }
+  }  
+}
 
 void ledOnOff(int ledNum){
       digitalWrite(ledNum, HIGH);
       delay(100);
       digitalWrite(ledNum, LOW);
       delay(100);
+}
+
+void buttonToggled(){
+  buttonState = !buttonState;
+  Serial.print("Interrupt caught new state: ");
+  Serial.println(buttonState);
+
 }
 
 /*
