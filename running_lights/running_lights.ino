@@ -5,6 +5,7 @@ int canBeChosen[5] = {1, 2, 3, 4, 5};
 int pins[8]; //array for the led pins
 
 volatile bool buttonState = false;
+//volatile bool buttonStatePressedReleased = false;
 
 
 void setup() {
@@ -18,10 +19,10 @@ void setup() {
     pins[i] = i + 4; //leds are connected to the pins through 4-11
     pinMode(pins[i], OUTPUT);
   }
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonToggled, CHANGE);
-
+  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonToggled, CHANGE); //Interrupt for the button
+  //attachInterrupt(digitalPinToInterrupt(buttonPin), buttonPressedReleased, RISING);
   }
 
   
@@ -31,13 +32,20 @@ void loop() {
     RunningLights();
   } else if (input == 2){
     RunningLightsWithPauseAndResume();
+  } else if (input == 3){
+    BinaryCountUpOnTimer();
+  } else if (input == 4){
+    //BinaryCountUpOnButton();
   }
   
 }
 
 
 
-
+/*
+ * 1st option
+ * Runs the lights
+*/
 void RunningLights() {
   while(1) {
     for (int i = 0; i < 7; i++) {
@@ -48,7 +56,12 @@ void RunningLights() {
     }
   }
 }
-
+/*
+ * 2nd option
+ * Runs the lights
+ * When button is pressed, running stops;
+ * When released, continues
+*/
 void RunningLightsWithPauseAndResume() {
   while(1) {
     for (int i = 0; i < 7; i++) {
@@ -62,19 +75,93 @@ void RunningLightsWithPauseAndResume() {
   }  
 }
 
+/*
+ * 3rd option
+ * Counts the numbers 0-255 and displays them as binary with leds
+*/
+void BinaryCountUpOnTimer(){
+  while (1) {
+    
+    for (int i = 0; i < 256; i++) {
+      PrintCurrentCount(i);
+      DisplayNumber(i);
+      delay(200);
+      OffLeds();
+    }
+    
+  }
+  
+}
+
+/*
+ * 4th option
+ * Counts the numbers when pressed button 0-255 and displays them as binary with leds
+
+void BinaryCountUpOnButton(){
+  while (1) {
+    for (int i = 0; i < 256; i++) {
+      while (!buttonStatePressedReleased) {};
+      OffLeds();
+      PrintCurrentCount(i);
+      DisplayNumber(i);
+      buttonStatePressedReleased = false;
+    }
+  }
+  
+}
+*/
+
+/*
+ * Prints the number that is currently displaying
+*/
+void PrintCurrentCount(int current) {
+  Serial.print("Current count is ");
+  Serial.println(current);
+}
+
+/*
+ * Displays the given number in binary using leds
+*/
+void DisplayNumber(int num) {
+  int bitChecker = 1;
+  for (int j = 0; j < 8; j++) {
+    if ((num & bitChecker) == bitChecker){
+      digitalWrite(pins[7-j], HIGH);
+    }
+    bitChecker = bitChecker * 2;
+  }
+}
+
+/*
+ * Turns off all the leds
+*/
+void OffLeds() {
+  for (int k = 0; k < 8; k++) {
+        digitalWrite(pins[k], LOW);
+  }
+}
+
+/*
+ * Turns on and off the given led
+*/
 void ledOnOff(int ledNum){
       digitalWrite(ledNum, HIGH);
-      delay(100);
+      delay(200);
       digitalWrite(ledNum, LOW);
-      delay(100);
+      delay(200);
 }
 
+/*
+ * Called when the button is toggled
+*/
 void buttonToggled(){
   buttonState = !buttonState;
-  Serial.print("Interrupt caught new state: ");
-  Serial.println(buttonState);
-
 }
+/*
+void buttonPressedReleased() {
+  buttonStatePressedReleased = true;
+}
+*/
 
 /*
 Reads the input from the serial monitor
@@ -85,12 +172,12 @@ int GetInput() {
   if (Serial.available() > 0) { // send data only when you receive data:
     chosenNumber = Serial.parseInt(); // reading the input
 
-    bool wrongInput = 1; // checking if the user gave a correct input
+    bool wrongInput = 1;          // checking if the user gave a correct input
     for (int i = 0; i < 5; i++) {
       if (chosenNumber == canBeChosen[i])
         wrongInput = 0;
     }
-    if (wrongInput) { //if Input is not one of the numbers we want
+    if (wrongInput) {             //if Input is not one of the numbers we want
       Serial.println("You wrote something that i don't want :(");
       return 0;
     }
