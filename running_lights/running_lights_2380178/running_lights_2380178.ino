@@ -1,11 +1,11 @@
 #define buttonPin 3
 
-int input = 0;
-int canBeChosen[5] = {1, 2, 3, 4, 5};
+int input = 0; //user input
+int canBeChosen[5] = {1, 2, 3, 4, 5}; //list for options
 int pins[8]; //array for the led pins
 
-volatile bool buttonState = LOW;
-volatile bool lastButtonState = HIGH;
+volatile bool buttonState = LOW;  //state of the button now
+volatile bool lastButtonState = HIGH;  //state of the button before
 
 
 void setup() {
@@ -21,7 +21,6 @@ void setup() {
   }
   pinMode(buttonPin, INPUT_PULLUP);
 
-  //attachInterrupt(digitalPinToInterrupt(buttonPin), debounceButton, CHANGE); //Interrupt for the button
   
   }
 
@@ -114,6 +113,7 @@ void BinaryCountUpOnButton(){
 }
 
 /*
+ * 5th option
  * Takes the number as input from the user and displays it in binary
 */
 
@@ -167,14 +167,6 @@ void ledOnOff(int ledNum){
       delay(200);
 }
 
-/*
- * Called when the button is toggled
-
-void buttonToggled(){
-  lastButtonState = buttonState;
-  buttonState = !buttonState;
-}
-*/
 
 /*
 Reads the input from the serial monitor
@@ -198,7 +190,10 @@ int GetInput(int firstInput) {
   return chosenNumber;
 }
 
-
+/*
+ * A function for the debouncing problem
+ * Takes the state of the current button and 
+ */
 boolean debounceButton(boolean state) 
 {
   boolean stateNow = digitalRead(buttonPin);
