@@ -242,11 +242,17 @@ void Button2Pressed() {
 
 //-------------------------------------------------------------
 void buttonToggeled1_2 () {
-  buttons[0] = !buttons[0];
+  if ((micros()-interrupt_counter1) > delay_micros) { //solving the bounce problem
+    buttons[0] = !buttons[0];
+    interrupt_counter1 = micros();
+  }
 }
 
 void buttonToggeled2_2 () {
-  buttons[1] = !buttons[1];
+  if ((micros()-interrupt_counter2) > delay_micros) { //solving the bounce problem
+    buttons[1] = !buttons[1];
+    interrupt_counter2 = micros();
+  }
 }
 
 void Game2Starter() {
