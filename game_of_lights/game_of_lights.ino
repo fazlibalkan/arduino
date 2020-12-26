@@ -2,6 +2,7 @@
 #define player2 3
 #define delay_micros 200000
 #define delay_ledmicros 400000
+#define delayNum 30
 
 int input = 0; //user input
 int canBeChosen[2] = {1, 2}; //list for options
@@ -38,49 +39,42 @@ void setup() {
   }
   pinMode(player1, INPUT);
   pinMode(player2, INPUT);
-  attachInterrupt(digitalPinToInterrupt(player1), buttonToggeled1, RISING);
-  attachInterrupt(digitalPinToInterrupt(player2), buttonToggeled2, RISING);
 
 }
 
 void loop() {
   input = GetInput(0);
   if (input == 1) {
-    Game1();
+    Serial.println("Nice choice. Enjoy!");
+    buttons[1] = LOW; buttons[0] = LOW;
+    scores[0] = 0; scores[1] = 0;
+    Game1Starter();
   } else if (input == 2){
-    int whowillplay = 1;
-    while (scores[0] != 5 && scores[1] != 5) { //game continues till one of the players' score become 5
-      whowillplay = !whowillplay; //changing the player when the round ends
-      
-      attachInterrupt(digitalPinToInterrupt(player1), buttonToggeled1_2, CHANGE);//attaching interrupts
-      attachInterrupt(digitalPinToInterrupt(player2), buttonToggeled2_2, CHANGE);
- 
-      Serial.print("Player "); Serial.print(whowillplay+1); Serial.println(" please press the button and set the time"); //printing a command for informing the player
-      
-      Game2(whowillplay); //Starting the game
-      
-      Serial.print("Scores are: Player1 = "); Serial.print(scores[0]); Serial.print(" Player2 = "); Serial.println(scores[1]); //printing the scores
-    }
-    //printing the winner
-    int winner = scores[0] < scores[1]? 2 : 1;
-    Serial.print("Player "); Serial.print(winner);
-    Serial.println(" WON THE GAME!!");
-    
+    Serial.println("Nice choice. Enjoy!");
+    buttons[1] = LOW; buttons[0] = LOW;
+    scores[0] = 0; scores[1] = 0;
+    Game2Starter();
   }
 }
 
-void Game1() {
-  while(1) {
+void Game1Starter() {
+  attachInterrupt(digitalPinToInterrupt(player1), buttonToggeled1, RISING);
+  attachInterrupt(digitalPinToInterrupt(player2), buttonToggeled2, RISING);
+  
+  while(scores[0] != 5 && scores[1] != 5) {
     //starting the game
-    //if (penalty[0]) detachInterrupt(digitalPinToInterrupt(player1));
     if (buttons[0] && !(penalty[0])) {
       Button1Pressed();
-      Serial.println(penalty[0]);
     }else if (buttons[1] && !penalty[1]) {
         Button2Pressed();
     }
     OffLeds(); //turning of the leds when the round finishes
   }
+  //printing the winner
+  int winner = scores[0] > scores[1] ? 1 : 2; //
+  Serial.print("Player "); Serial.print(winner); Serial.println(" WON THE GAME"); 
+  Serial.print("Enter:\nSelect 1 for the first game.\nSelect 2 for the second game.\n");
+
 }
 
 /*
@@ -89,7 +83,6 @@ void Game1() {
 void buttonToggeled1() {
   if ((micros()-interrupt_counter1) > delay_micros) { //solving the bounce problem
     if (buttons[0]) {
-      Serial.println("player1 lost");
       GameOver();
     } else {
       buttons[0] = true;
@@ -101,7 +94,6 @@ void buttonToggeled1() {
 void buttonToggeled2() {
   if ((micros()-interrupt_counter2) > delay_micros) { //solving the bounce problem
     if (buttons[1]) {
-      Serial.println("player2 lost");
       GameOver();
     } else {
       buttons[1] = true;
@@ -112,7 +104,6 @@ void buttonToggeled2() {
 
 void GameOver() {
   buttons[0] = false; buttons[1] = false;
-  Serial.println("game over");
   OffLeds();
 }
 /*
@@ -148,11 +139,13 @@ void Button1Pressed() {
             digitalWrite(pins[s], HIGH);
             s--;
          }
-         delay(100);
-         if (i == 7) Serial.println("Player 1 won");
+         delay(delayNum);
+         if (i == 7) {
+          scores[0]++;
+          Serial.print("Player 1: "); Serial.print(scores[0]); Serial.print(" Player 2: "); Serial.println(scores[1]); 
+         }
       }
       p1 = 0;
-      buttons[0] = LOW; buttons[1] = LOW;
       penalty[1] = 0;
 }
 /*
@@ -189,11 +182,13 @@ void Button2Pressed() {
             digitalWrite(pins[s], HIGH);
             s++;
          }
-         delay(100);
-         if (i == 0) Serial.println("Player 2 won");
+         delay(delayNum);
+         if (i == 0){
+          scores[1]++;
+          Serial.print("Player 1: "); Serial.print(scores[0]); Serial.print(" Player 2: "); Serial.println(scores[1]); 
+         }
       }
       p1 = 0;
-      buttons[1] = LOW; buttons[0] = LOW;
       penalty[0] = 0;
 }
 
@@ -254,9 +249,30 @@ void buttonToggeled2_2 () {
   buttons[1] = !buttons[1];
 }
 
+void Game2Starter() {
+  int whowillplay = 1;
+    while (scores[0] != 5 && scores[1] != 5) { //game continues till one of the players' score become 5
+      whowillplay = !whowillplay; //changing the player when the round ends
+      
+      attachInterrupt(digitalPinToInterrupt(player1), buttonToggeled1_2, CHANGE);//attaching interrupts
+      attachInterrupt(digitalPinToInterrupt(player2), buttonToggeled2_2, CHANGE);
+ 
+      Serial.print("Player "); Serial.print(whowillplay+1); Serial.println(" please press the button and set the time"); //printing a command for informing the player
+      
+      Game2(whowillplay); //Starting the game
+      
+      Serial.print("Scores are: Player1 = "); Serial.print(scores[0]); Serial.print(" Player2 = "); Serial.println(scores[1]); //printing the scores
+    }
+    //printing the winner
+    int winner = scores[0] < scores[1]? 2 : 1;
+    Serial.print("Player "); Serial.print(winner); Serial.println(" WON THE GAME!!");
+    Serial.print("Enter:\nSelect 1 for the first game.\nSelect 2 for the second game.\n");
+}
+
 void Game2(int p) {
   int first = 1;
   unsigned long start, finish;
+  buttons[0] = false; buttons[1] = false;
   while (1) {
     if (buttons[p] && first) {
       OnLeds();
@@ -272,8 +288,8 @@ void Game2(int p) {
   time_target = finish - start;
   first = 1;
   Serial.println("Oppenent should start when s/he sees the lights turned on.");
-
   delay(3000);
+  buttons[0] = false; buttons[1] = false;
   OnLeds();
   while (1) {
     if (buttons[(p+1)%2] && first) {
@@ -331,9 +347,9 @@ int GetInput(int firstInput) {
       if (chosenNumber == canBeChosen[i])
         wrongInput = 0;
     }
-    if (firstInput && wrongInput) {  //if Input is not one of the numbers we want
+    if (wrongInput) {  //if Input is not one of the numbers we want
       //firstInput is for figuring out 
-      Serial.println("You wrote something that i don't want :(");
+      Serial.println("Invalid input, please try again.");
       return 0;
     }
   }
