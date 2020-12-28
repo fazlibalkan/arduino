@@ -4,8 +4,9 @@
 
 int canBeChosen[4] = {1, 2, 3, 4};
 int input;
-char rx_byte = 0;
-String rx_str = "";
+String str = "";
+char chr = 0;
+
 
 
 Servo servo;
@@ -23,88 +24,111 @@ void setup()
   Serial.setTimeout(2); // for reducing the waiting period 
   servo.attach(servoPin);
   pinMode(servoPin, OUTPUT);
-  Serial.println("");
+  Serial.println("To control the motor please choose\n1 for controlling with an input (pwm)\n2 for controlling with an input (library)\n3 for controlling with POT\n4 for controlling with a complex pattern of the form spos:wait,pos:waite");
 }
 
 void loop()
 {
   input = GetInput(1);
   if (input == 1) {
+    ServoControlWithPWM();
+  } else if (input == 2) {
+    ServoControlWithLibrary();
+  } else if (input == 3) {
+    ServoControlWithPOT();
+  } else if (input == 4) {
+    CommunicationProtocolStarter();
+  }
+}
+
+void ServoControlWithPWM() {
+  Serial.println("Please enter the angle...");
+  while (1){
     while (notyet) {
-      Serial.println("a");
       inputAngle = GetInput(0);
     }
     while(1) {
-      Serial.println("b");
       servo1(inputAngle);
     }
     notyet = 1;
-  } else if (input == 2) {
-    while (notyet) {
-      Serial.println(inputAngle);
-      inputAngle = GetInput(0);
-    }
-    while(1) {
-      Serial.println(inputAngle);
-      servo2(inputAngle);
-    }
-    notyet = 1;
-  } else if (input == 3) {
-    while (1) {
-      ServoControlWithPOT();
-    }
-  } else if (input == 4) {
-    //CommunicationProtocol();
-    while (1) {
-      GetInputAsString();
-    }
-    Serial.println(rx_str);
   }
-  
-  
-  
+  Serial.println("To control the motor please choose\n1 for controlling with an input (pwm)\n2 for controlling with an input (library)\n3 for controlling with POT\n4 for controlling with a complex pattern of the form spos:wait,pos:waite");
 }
 
+void ServoControlWithLibrary() {
+  Serial.println("Please enter the angle...");
+  while (notyet) {
+    inputAngle = GetInput(0);
+  }
+  while(1) {
+    servo2(inputAngle);
+    break;
+  }
+  notyet = 1; 
+  Serial.println("To control the motor please choose\n1 for controlling with an input (pwm)\n2 for controlling with an input (library)\n3 for controlling with POT\n4 for controlling with a complex pattern of the form spos:wait,pos:waite");
+}
+
+/*
+ *Control the servo with the potentiometer
+ */
+void ServoControlWithPOT() {
+  Serial.println("You can adjust your POT and accordingly motor will respond.");
+  while (1) {
+    servoVal = analogRead(servoP);
+    int newVal = map(servoVal , 0, 1023, 0, 180);
+    servo.write(newVal);
+    Serial.print("Angle = "); Serial.println(newVal-90);
+  }
+  Serial.println("To control the motor please choose\n1 for controlling with an input (pwm)\n2 for controlling with an input (library)\n3 for controlling with POT\n4 for controlling with a complex pattern of the form spos:wait,pos:waite");
+}
+
+
+void CommunicationProtocolStarter() {
+    Serial.println("Please enter the pattern...");
+    while (notyet) {
+      GetInputAsString();
+    }
+    Serial.println(str + "e");
+    CommunicationProtocol(str + "eE");
+    notyet = 1;
+    str = "";
+    Serial.println("To control the motor please choose\n1 for controlling with an input (pwm)\n2 for controlling with an input (library)\n3 for controlling with POT\n4 for controlling with a complex pattern of the form spos:wait,pos:waite");
+
+}
+
+/*
+ * Takes a string input of the form "s45:1000,-45:1000,0:2000e"
+ * Converts it into pos:wait pairs. pos = angle, wait = delay
+ * Controlls the servo motor according to the given pairs
+ */
 void CommunicationProtocol(String str) {
   String pos = "";
   String wait = "";
   int i = 1;
   int posorwait = -1;
   
-  while (1) {
-    if (str[i] == ':') {
-      posorwait = 1;
-    }
-    if (str[i] == ',') {
-      posorwait = -1;
-      servo2(int(pos));
-      delay(int(wait));
-    }
-    if (posorwait == -1) {
-      pos += str[i];
-    }
-    if (posorwait == 1) {
-      wait += str[i];
+  while (str[i] != 'E') {
+    if (str[i] == ':') { 
+      posorwait = 1; //After ":" start reading for the waiting period
+    } else if (str[i] == ',' || str[i] == 'e') { 
+      posorwait = -1; //after these characters start reading for the angle
+      servo2(pos.toInt()); //do the given paired pos:wait
+      delay(wait.toInt());
+      pos = ""; wait = "";  //empty the strings for the other pair
+    }else if (posorwait == -1) {
+      pos += String(str[i]);
+    }else if (posorwait == 1) {
+      wait += String(str[i]);
     }
     i++;
   }
 }
 
-
 /*
- *Control the servo with the potentiometer
+ *Control the servo with the given value using pwm logic
  */
-void ServoControlWithPOT() {
-  servoVal = analogRead(servoP);
-  int newVal = map(servoVal , 0, 1023, 0, 180);
-  servo.write(newVal);
-  Serial.print("Aci Degeri = ");
-  Serial.println(newVal);
-}
-
 void servo1 (int angle)
 {
-  //0 - 180 lerdeki değerlerini bul
   if (angle >= -90 && angle <= 90) {
     pwm = 500 + (((90 + angle)/180.0)*2000);
     digitalWrite(servoPin, HIGH);
@@ -112,10 +136,14 @@ void servo1 (int angle)
     digitalWrite(servoPin, LOW);
     delayMicroseconds(20000 - pwm);
   } else {
-    Serial.println("You wrote an invalid angle input. Please make sure that your input is in the range [-90, 90]");
+    Serial.println("You gave an invalid angle input. Please make sure that your input is in the range [-90, 90]");
   }
 }
 
+
+/*
+ *Control the servo with the given value using servo library
+ */
 void servo2 (int angle)
 {
   if (angle >= -90 && angle <= 90) {
@@ -124,7 +152,6 @@ void servo2 (int angle)
     Serial.println("You wrote an invalid angle input. Please make sure that your input is in the range [-90, 90]");
   }
 }
-
 
 
 /*
@@ -151,21 +178,19 @@ int GetInput(int first) {
   return chosenNumber;
 }
 
+/*
+ *Reads the input from the serial monitor as a string till it sees the character 'e' 
+ */
 void GetInputAsString() {
   if (Serial.available() > 0) {    // is a character available?
-    rx_byte = Serial.read();       // get the character
-    Serial.print("Welcome ");
-    if (rx_byte != '\n') {
+    chr = Serial.read();       // get the character
+    if (chr != 'e') {
       // a character of the string was received
-      rx_str = rx_str + rx_byte;
+      str.concat(chr);
     }
     else {
       // end of string
-      Serial.println("Welcome ");
-      Serial.println(rx_str);
-      //rx_str = "";                // clear the string for reuse
-      Serial.println("");
-      Serial.println("Enter your name.");
+      notyet = 0;
     }
   }
 }
