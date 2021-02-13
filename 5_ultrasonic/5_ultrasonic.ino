@@ -2,7 +2,6 @@
 Fazlı, Balkan, 2380178
 12.02.2021
 */
-
 #include<Servo.h>
 #define servoPin 8
 
@@ -20,7 +19,7 @@ void setup() {
   servo.attach(servoPin); // Servo setup
   pinMode(servoPin, OUTPUT); // Setting servoPin as output
 }
-  
+
 void loop() {
   duration = readUltraSonic();
   Serial.print("Total flight time: ");
@@ -71,15 +70,14 @@ long microseconds2Millimeters(long microseconds) {
   */
   return microseconds * 10 / 29 / 2;
 }
-
 /*
  * Takes the angle as input.
- * Rotates the servo when the obstacle is in the range of 0-30.
+ * Rotates the servo when the obstacle is in the range of 10-180.
  */
 void rotater(int angle)
 {
   angle /= 10;
-  if (angle >= 0 && angle <= 30) {
-    servo.write(angle * 6);
+  if (angle > 10 && angle < 190) {
+    servo.write(angle - 10);
   }
 }
